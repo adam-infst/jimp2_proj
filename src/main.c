@@ -19,17 +19,12 @@ int main()
 
     if(mode == 's')
     {
-        int n = 0;
-		char c[max];
-		//char* c = malloc((max+1)*sizeof(char));
 		printf("podaj liczbe wierzcholkow: ");
-		fgets(c, max, stdin);
-		printf("work");
-		if(c == NULL){
+			int n;
+		scanf(" %d", &n);
+		if(n == 0){
 			return 1;
 		}
-		n = atoi(c);
-		printf("%d",n);
 		int **T = malloc(n * sizeof(int*));
 		if(T == NULL){
 			return 2;
@@ -50,12 +45,16 @@ int main()
 		int a = 0, b = 0;
 		int r=n*n*2+1;
 		srand(time(NULL));
-		char *los;
-		printf("jesli chcesz by graf byl losowany, wpisz y, by w przeciwnym wypadku kliknij enter");
-		fgets(los,1,stdin);
+		printf("jesli chcesz by graf byl losowany, wpisz y, by w przeciwnym wypadku kliknij enter ");
+		int los = fgetc(stdin);
+			if(los == '\n')
+			{
+				los = fgetc(stdin);
+			}
+
 		for(;;)
 		{
-			if(los[0] == 'y')
+			if(los == 'y')
 			{
 			a=rand()%n+1;
 			b=rand()%n+1;
@@ -64,19 +63,31 @@ int main()
 			a = 0;
 			b = 0;
 			printf("podaj wierzcholek z ktorego chcesz zrobic polaczenie, lub q jesli chcesz przestac pisac wierzcholki:");
-			fgets(c, max, stdin);
-			if(c[0] == 'q')
+			a = fgetc(stdin);
+			if(a == '\n')
+			{
+				a = fgetc(stdin);
+			}
+			if(a == 'q')
 			{
 				break;
 			}
-			a = atoi(c);
+			
 			printf("podaj wierzcholek do ktorego chcesz zrobic polaczenie:");
-			fgets(c, max, stdin);
-			b = atoi(c);
+			b = fgetc(stdin);
+			if(b == '\n')
+			{
+				b = fgetc(stdin);
 			}
-			if(los[0] == 'y'  &&  rand()%r == 0 || c[0]=='q')
+			}
+			if((los == 'y'  &&  rand()%r == 0) || a == 'q')
 			{
 				break;
+			}
+			if(los != 'y')
+			{
+				a=a-'0';
+				b=b-'0';
 			}
 			if(a>0 && b>0 && a<=n && b<=n)
 			{
@@ -84,7 +95,6 @@ int main()
 			}
 		}
         WypiszGraf(T, n);
-		//free(c);
 		free(T);
     }
     else if(mode == 'c')
@@ -107,7 +117,7 @@ void WypiszGraf(int **T, int n)
 	printf("wierzcholki w grafie: ");
 	for(int i = 0; i < n; i++)
 	{
-		printf("W%d ",i);
+		printf("W%d ",i+1);
 	}
     printf("\npolaczenia w grafie: ");
     for(int i = 0; i < n; i++)
@@ -125,7 +135,7 @@ void WypiszGraf(int **T, int n)
 
 char* AskChatbot()
 {
-    char message[900];
+    char message[2000];
     // printf("\n");
     // int c = fgetc(stdin); // czasami w strumieniu zostaje \n po scanf i psuje fgets, ale to chyba tylko w wsl
     // if (c != '\n') {
@@ -136,7 +146,7 @@ char* AskChatbot()
 	
     char* url = "http://localhost:1234/api/v0/chat/completions";
 	// UWAGA na wsl serwer może mieć problemy ale to już jego sprawa, kod działa tylko serwer nie chce odpowiedzieć
-    char jsonInputString[1000];
+    char jsonInputString[5000];
     sprintf(jsonInputString,
     "{"
         " \"model\": \"granite-3.0-2b-instruct\","
