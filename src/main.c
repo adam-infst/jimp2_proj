@@ -190,9 +190,9 @@ char* AskChatbot()
         if (res != CURLE_OK)
         {
             printf("CURL request failed: %s\n", curl_easy_strerror(res));
-            char* example = malloc(130 * sizeof(char)); //ExtractData potrzebuje dynamicznego ciągu znaków
+            char* example = malloc(400 * sizeof(char)); //ExtractData potrzebuje dynamicznego ciągu znaków
             strcpy(example, "Cześć, chętnie pomogę ci utworzyć graf! Oto zapis grafu zgodny z formatem który"
-            " otrzymałem: # 3  1 0 1 0  2 0 0 1  3 1 0 0"); // strcpy żeby nie nadpisać wskaźnika
+            " otrzymałem: # 5  1 1 1 0 1 0  2 1 0 1 0 0  3 1 0 0 1 1  4 1 1 1 0 1  5 1 0 0 0 1"); // strcpy żeby nie nadpisać wskaźnika
             printf("Zwrócono przykładową odpowiedź od czatbota: \n%s\n\n", example);
             curl_easy_cleanup(curl);
             curl_slist_free_all(headers);
