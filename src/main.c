@@ -7,11 +7,12 @@
 
 #define max 5
 
-void WypiszGraf(int **T, int n);
+void WypiszGraf(int **T, int n, FILE* out);
+void PodajWynik(int argc, char** argv, int n, int **T);
 char* AskChatbot();
 int** ExtractData(char* text, int* n); // deklaracja przed main żeby -Wall nie krzyczał
 
-int main()
+int main(int argc, char** argv)
 {
     printf("Chcesz utworzyć graf samemu czy przy pomocy czatbota?\n[s - samemu, c - czatbot] ");
     int mode = fgetc(stdin);
@@ -94,14 +95,15 @@ int main()
 				T[a-1][b-1]=1;
 			}
 		}
-        WypiszGraf(T, n);
+        PodajWynik(argc, argv, n, T);
 		free(T);
     }
     else if(mode == 'c')
     {
         int n = 0;
         int **T = ExtractData(AskChatbot(), &n);
-        WypiszGraf(T, n);
+        PodajWynik(argc, argv, n, T);
+		free(T);
     }
     else 
     {
@@ -112,25 +114,46 @@ int main()
 	return 0;
 }
 
-void WypiszGraf(int **T, int n)
+void WypiszGraf(int **T, int n, FILE* out)
 {
-	printf("wierzcholki w grafie: ");
+	fprintf(out, "wierzcholki w grafie: ");
 	for(int i = 0; i < n; i++)
 	{
-		printf("W%d ",i+1);
+		fprintf(out, "W%d ",i+1);
 	}
-    printf("\npolaczenia w grafie: ");
+    fprintf(out, "\npolaczenia w grafie: ");
     for(int i = 0; i < n; i++)
     {
-        printf("\n");
+        fprintf(out, "\n");
         for(int j = 0; j < n; j++)
         {
             if(T[i][j] == 1){
-                printf("W%d->W%d ", i+1, j+1);
+                fprintf(out, "W%d->W%d ", i+1, j+1);
             }			
         }
     }
-    printf("\n");
+    fprintf(out, "\n");
+}
+
+void PodajWynik(int argc, char** argv, int n, int **T)
+{
+    if(argc == 1) {
+        WypiszGraf(T, n, stdout);
+    }
+    else if(argc == 2) {
+        if(strcmp(argv[1], "-f") == 0) {
+            FILE* out = fopen("output.txt", "w");
+            WypiszGraf(T, n, out);
+            fclose(out);
+            printf("\nGraf został zapisany do pliku output.txt\n");
+        }
+        else {
+            printf("\nPodano niewłaściwy parametr wywołania, przyjmowany jest tylko brak lub '-f'\n");
+        }
+    }
+    else {
+        printf("\nPodano niewłaściwą ilość parametrów wywołania, przyjmowany jest tylko brak lub '-f'\n");
+    }
 }
 
 char* AskChatbot()
