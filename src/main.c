@@ -102,6 +102,9 @@ int main(int argc, char** argv)
     {
         int n = 0;
         int **T = ExtractData(AskChatbot(), &n);
+        if (T == NULL) {
+            return -2;
+        }
         PodajWynik(argc, argv, n, T);
 		free(T);
     }
@@ -159,12 +162,11 @@ void PodajWynik(int argc, char** argv, int n, int **T)
 char* AskChatbot()
 {
     char message[2000];
-    // printf("\n");
-    // int c = fgetc(stdin); // czasami w strumieniu zostaje \n po scanf i psuje fgets, ale to chyba tylko w wsl
-    // if (c != '\n') {
-    //     ungetc(c, stdin);
-    // }
     printf("Napisz wiadomość do czatbota: \n");
+    int c = fgetc(stdin); // czasami w strumieniu zostaje \n po scanf i psuje fgets, ale to chyba tylko w wsl
+    if (c != '\n') {
+        ungetc(c, stdin);
+    }
 	fgets(message, sizeof(message), stdin);
 	
     char* url = "http://localhost:1234/api/v0/chat/completions";
@@ -215,8 +217,8 @@ char* AskChatbot()
             printf("CURL request failed: %s\n", curl_easy_strerror(res));
             char* example = malloc(400 * sizeof(char)); //ExtractData potrzebuje dynamicznego ciągu znaków
             strcpy(example, "Cześć, chętnie pomogę ci utworzyć graf! Oto zapis grafu zgodny z formatem który"
-            " otrzymałem: # 5  1 1 1 0 1 0  2 1 0 1 0 0  3 1 0 0 1 1  4 1 1 1 0 1  5 1 0 0 0 1"); // strcpy żeby nie nadpisać wskaźnika
-            printf("Zwrócono przykładową odpowiedź od czatbota: \n%s\n\n", example);
+            " otrzymałem: # 5   1 1 1 0 1 0   2 1 0 1 0 0   3 1 0 0 1 1   4 1 1 1 0 1   5 1 0 0 0 1"); // strcpy żeby nie nadpisać wskaźnika
+            printf("Zwrócono przykładową odpowiedź od czatbota: \n\n%s\n\n", example);
             curl_easy_cleanup(curl);
             curl_slist_free_all(headers);
             free(response);
@@ -259,12 +261,15 @@ int** ExtractData(char text[], int* n)
 	int **T = malloc((*n) * sizeof(int*));
 	if(T == NULL){
         printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
+        free(text);
 		return NULL;
 	}
 	for (int i = 0; i < (*n); i++) {
 		T[i] = malloc((*n) * sizeof(int));
 		if(T[i] == NULL){
             printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
+            free(text);
+            free(T);
 			return NULL;
 		}
 	}
@@ -278,7 +283,18 @@ int** ExtractData(char text[], int* n)
             token = strtok(NULL, " "); // pierwsza liczba z serii to nr wierzchołka
             for(int j = 0; j < *n; j++)
             {
-                T[i][j] = atoi(token);
+                if(token == NULL || sscanf(token, "%d", &T[i][j]) != 1) {
+                    printf("Błędny format odpowiedzi: Spodziewano się informacji o połączeniu W%d->W%d, ale nie trafiono na liczbę.\n", i, j);
+                    free(text);
+                    free(T);
+                    return NULL;
+                }
+                if(T[i][j] != 0 && T[i][j] != 1) { // <- nie może być else if bo sprawdzamy wynik z warunku pierwszego if
+                    printf("Błędny format odpowiedzi: Spodziewano się informacji o połączeniu W%d->W%d, ale trafiono na symbol wierzchołka '%d'\n", i+1, j+1, T[i][j]);
+                    free(text);
+                    free(T);
+                    return NULL;
+                }
                 token = strtok(NULL, " ");
             }
         }
