@@ -5,8 +5,6 @@
 #include <curl/easy.h>
 #include <time.h>
 
-#define max 5
-
 void WypiszGraf(int **T, int n, FILE* out);
 void PodajWynik(int argc, char** argv, int n, int **T);
 char* AskChatbot();
@@ -28,11 +26,13 @@ int main(int argc, char** argv)
 		}
 		int **T = malloc(n * sizeof(int*));
 		if(T == NULL){
+            printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
 			return 2;
 		}
 		for (int i = 0; i < n; i++) {
 			T[i] = malloc(n * sizeof(int));
 			if(T[i] == NULL){
+                printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
 				return 3;
 			}
 		}
@@ -243,23 +243,28 @@ int** ExtractData(char text[], int* n)
     char* znak = "#";
     char* token;
 
-    token = strtok(text, znak); // dotarł do znaku
-    
+    token = strtok(text, znak); // dotarł do znaku (albo do końca napisu i go nie znalazł)
+    if(token == NULL) {
+        printf("Błędny format odpowiedzi: Nie znaleziono znaku '%s' w ciągu znaków.\n", znak);
+        free(text);
+        return NULL;
+    }
     token = strtok(NULL, " "); // przechodzi do następnego tokena
-    *n = atoi(token);
-    if(*n > max) {
-        printf("Zbyt duża liczba wierzchołków.\n");
+    if(token == NULL || sscanf(token, "%d", n) != 1) {
+        printf("Błędny format odpowiedzi: Nie znaleziono liczby całkowitej po znaku kodowym '%s'.\n", znak);
         free(text);
         return NULL;
     }
     
 	int **T = malloc((*n) * sizeof(int*));
 	if(T == NULL){
+        printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
 		return NULL;
 	}
 	for (int i = 0; i < (*n); i++) {
 		T[i] = malloc((*n) * sizeof(int));
 		if(T[i] == NULL){
+            printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
 			return NULL;
 		}
 	}
@@ -279,7 +284,7 @@ int** ExtractData(char text[], int* n)
         }
     }
     else {
-        printf("Nie znaleziono znaku '%s' w ciągu znaków.\n", znak);
+        printf("Błędny format odpowiedzi: Nie znaleziono nazwy wierzchołka po podanej ilości wierzchołków.\n");
     }
     free(text);
     return T;
