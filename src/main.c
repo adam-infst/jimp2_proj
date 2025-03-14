@@ -7,32 +7,49 @@
 
 void WypiszGraf(int **T, int n, FILE* out);
 void PodajWynik(int argc, char** argv, int n, int **T);
-char* AskChatbot();
+char* AskChatbot(FILE* in);
 int** ExtractData(char* text, int* n); // deklaracja przed main żeby -Wall nie krzyczał
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) // dodatkowa uwaga: niepoprawne parametry wywołania lub ich nadmierna ilość są po prostu ignorowane
 {
+    FILE* in = stdin;
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-rf") == 0) {
+            in = fopen("input.txt", "r"); // pamiętać o zamknięciu pliku ZAWSZE
+            if (in == NULL) {
+                printf("Wywołano program w trybie czytania poleceń z pliku, ale nie znaleziono input.txt\n");
+                return -1;
+            }
+            break;
+        }
+    }
+
     printf("Chcesz utworzyć graf samemu czy przy pomocy czatbota?\n[s - samemu, c - czatbot] ");
-    int mode = fgetc(stdin);
+    int mode = fgetc(in);
     printf("\n");
 
     if(mode == 's')
     {
+		int n = 0;
 		printf("podaj liczbe wierzcholkow: ");
-			int n;
-		scanf(" %d", &n);
-		if(n == 0){
+		fscanf(in, " %d", &n);
+		if(n < 1) { 
+            fclose(in);
 			return 1;
 		}
+
 		int **T = malloc(n * sizeof(int*));
 		if(T == NULL){
             printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
+            fclose(in);
 			return 2;
 		}
 		for (int i = 0; i < n; i++) {
 			T[i] = malloc(n * sizeof(int));
 			if(T[i] == NULL){
                 printf("Nie udało się przypisać pamięci dla tablicy reprezentującej graf.\n");
+                fclose(in);
 				return 3;
 			}
 		}
@@ -47,39 +64,38 @@ int main(int argc, char** argv)
 		int r=n*n*2+1;
 		srand(time(NULL));
 		printf("jesli chcesz by graf byl losowany, wpisz y, by w przeciwnym wypadku kliknij enter ");
-		int los = fgetc(stdin);
-			if(los == '\n')
-			{
-				los = fgetc(stdin);
+		int los = fgetc(in);
+			if(los == '\n') {
+				los = fgetc(in);
 			}
-
 		for(;;)
 		{
 			if(los == 'y')
 			{
-			a=rand()%n+1;
-			b=rand()%n+1;
-			}else
-			{
-			a = 0;
-			b = 0;
-			printf("podaj wierzcholek z ktorego chcesz zrobic polaczenie, lub q jesli chcesz przestac pisac wierzcholki:");
-			a = fgetc(stdin);
-			if(a == '\n')
-			{
-				a = fgetc(stdin);
+                a=rand()%n+1;
+                b=rand()%n+1;
 			}
-			if(a == 'q')
+            else
 			{
-				break;
-			}
-			
-			printf("podaj wierzcholek do ktorego chcesz zrobic polaczenie:");
-			b = fgetc(stdin);
-			if(b == '\n')
-			{
-				b = fgetc(stdin);
-			}
+                a = 0;
+                b = 0;
+                printf("podaj wierzcholek z ktorego chcesz zrobic polaczenie, lub q jesli chcesz przestac pisac wierzcholki:");
+                a = fgetc(in);
+                if(a == '\n' || a == ' ')
+                {
+                    a = fgetc(in);
+                }
+                if(a == 'q')
+                {
+                    break;
+                }
+                
+                printf("podaj wierzcholek do ktorego chcesz zrobic polaczenie:");
+                b = fgetc(in);
+                if(b == '\n' || b == ' ')
+                {
+                    b = fgetc(in);
+                }
 			}
 			if((los == 'y'  &&  rand()%r == 0) || a == 'q')
 			{
@@ -101,8 +117,9 @@ int main(int argc, char** argv)
     else if(mode == 'c')
     {
         int n = 0;
-        int **T = ExtractData(AskChatbot(), &n);
+        int **T = ExtractData(AskChatbot(in), &n);
         if (T == NULL) {
+            fclose(in);
             return -2;
         }
         PodajWynik(argc, argv, n, T);
@@ -111,9 +128,11 @@ int main(int argc, char** argv)
     else 
     {
         printf("Podano niewłaściwą opcję.\n");
+        fclose(in);
         return -1;
     }
 
+    fclose(in);
 	return 0;
 }
 
@@ -140,34 +159,29 @@ void WypiszGraf(int **T, int n, FILE* out)
 
 void PodajWynik(int argc, char** argv, int n, int **T)
 {
-    if(argc == 1) {
-        WypiszGraf(T, n, stdout);
-    }
-    else if(argc == 2) {
-        if(strcmp(argv[1], "-f") == 0) {
+    for(int i = 1; i < argc; i++)
+    {
+        if(strcmp(argv[i], "-wf") == 0)
+        {
             FILE* out = fopen("output.txt", "w");
             WypiszGraf(T, n, out);
             fclose(out);
-            printf("\nGraf został zapisany do pliku output.txt\n");
-        }
-        else {
-            printf("\nPodano niewłaściwy parametr wywołania, przyjmowany jest tylko brak lub '-f'\n");
+            printf("Graf został zapisany do pliku output.txt\n");
+            return;
         }
     }
-    else {
-        printf("\nPodano niewłaściwą ilość parametrów wywołania, przyjmowany jest tylko brak lub '-f'\n");
-    }
+    WypiszGraf(T, n, stdout);
 }
 
-char* AskChatbot()
+char* AskChatbot(FILE* in)
 {
     char message[2000];
     printf("Napisz wiadomość do czatbota: \n");
-    int c = fgetc(stdin); // czasami w strumieniu zostaje \n po scanf i psuje fgets, ale to chyba tylko w wsl
+    int c = fgetc(in); // czasami w strumieniu zostaje \n po scanf i psuje fgets
     if (c != '\n') {
-        ungetc(c, stdin);
+        ungetc(c, in);
     }
-	fgets(message, sizeof(message), stdin);
+	fgets(message, sizeof(message), in);
 	
     char* url = "http://localhost:1234/api/v0/chat/completions";
 	// UWAGA na wsl serwer może mieć problemy ale to już jego sprawa, kod działa tylko serwer nie chce odpowiedzieć
